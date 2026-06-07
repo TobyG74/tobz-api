@@ -1,0 +1,15 @@
+# Secrets
+.env
+*.env
+!.env.example
+
+# Binaries
+/bin/
+/tmp/
+server
+server.exe
+
+# Go
+*.test
+*.out
+vendor/

@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tobz
+      POSTGRES_PASSWORD: tobz
+      POSTGRES_DB: tobz_api
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tobz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      PORT: "8080"
+      BASE_URL: http://localhost:8080
+      DATABASE_URL: postgres://tobz:tobz@db:5432/tobz_api?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-ganti-di-production-minimal-32-char}
+      CAPTCHA_ENABLED: "false"
+      ALLOWED_ORIGINS: http://localhost:3000
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
