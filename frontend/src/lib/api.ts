@@ -3,9 +3,12 @@ import type {
   AuthResult,
   CreatedApiKey,
   Envelope,
+  ImageResult,
   MediaResult,
+  PixivResult,
   PlatformInfo,
   User,
+  WhitelistIP,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8080/api/v1";
@@ -87,6 +90,9 @@ export const api = {
 
   me: () => request<User>("/auth/me", { auth: true }),
 
+  changePassword: (body: { current_password: string; new_password: string }) =>
+    request<AuthResult>("/auth/change-password", { method: "POST", body, auth: true }),
+
   oauthURL: (provider: "google" | "github") => `${BASE}/auth/oauth/${provider}/login`,
 
   // ---- API keys ----
@@ -97,10 +103,35 @@ export const api = {
 
   revokeKey: (id: string) => request<{ message: string }>(`/keys/${id}`, { method: "DELETE", auth: true }),
 
+  // ---- IP whitelist ----
+  listWhitelist: () => request<{ ips: WhitelistIP[]; max: number }>("/whitelist/", { auth: true }),
+
+  addWhitelist: (body: { ip: string; label?: string }) =>
+    request<WhitelistIP>("/whitelist/", { method: "POST", body, auth: true }),
+
+  removeWhitelist: (id: string) =>
+    request<{ message: string }>(`/whitelist/${id}`, { method: "DELETE", auth: true }),
+
   // ---- Downloader ----
   platforms: (apiKey: string) =>
     request<{ platforms: PlatformInfo[] }>("/download/platforms", { apiKey }),
 
   download: (url: string, apiKey: string) =>
     request<MediaResult>(`/download?url=${encodeURIComponent(url)}`, { apiKey }),
+
+  // ---- Search ----
+  searchSources: (apiKey: string) =>
+    request<{ sources: string[] }>("/search/sources", { apiKey }),
+
+  searchImages: (q: string, source: string, limit: number, apiKey: string) =>
+    request<{ source: string; query: string; count: number; results: ImageResult[] }>(
+      `/search/images?q=${encodeURIComponent(q)}&source=${source}&limit=${limit}`,
+      { apiKey }
+    ),
+
+  searchPixiv: (q: string, type: string, apiKey: string) =>
+    request<{ query: string; type: string; count: number; results: PixivResult[] }>(
+      `/search/pixiv?q=${encodeURIComponent(q)}&type=${type}`,
+      { apiKey }
+    ),
 };

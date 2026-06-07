@@ -75,3 +75,30 @@ export interface PlatformInfo {
   platform_name: string;
   downloader: string;
 }
+
+export interface ImageResult {
+  url: string;
+  thumbnail: string;
+  title?: string;
+  width?: number;
+  height?: number;
+  source?: string;
+  author?: string;
+  type?: string;
+}
+
+export interface PixivResult {
+  id: string;
+  title: string;
+  user_id: string;
+  user_name: string;
+  type: string;
+}
+
+export interface WhitelistIP {
+  id: string;
+  user_id: string;
+  ip: string;
+  label: string;
+  created_at: string;
+}

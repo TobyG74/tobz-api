@@ -8,6 +8,9 @@ import { Turnstile } from "./Turnstile";
 
 type Mode = "login" | "register";
 
+// Captcha can be disabled for development (must match backend CAPTCHA_ENABLED).
+const captchaEnabled = import.meta.env.VITE_CAPTCHA_ENABLED !== "false";
+
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { setSession } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -19,7 +22,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!captcha) {
+    if (captchaEnabled && !captcha) {
       toast.error("Selesaikan captcha terlebih dahulu");
       return;
     }
@@ -94,7 +97,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
           />
         </Field>
 
-        <Turnstile onToken={setCaptcha} />
+        {captchaEnabled && <Turnstile onToken={setCaptcha} />}
 
         <Button type="submit" loading={loading} className="w-full">
           {mode === "login" ? "Masuk" : "Daftar sekarang"}

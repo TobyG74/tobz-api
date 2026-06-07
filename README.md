@@ -41,6 +41,7 @@ A full refactor of the legacy Flask API into a Go backend and a React frontend.
 Tobz API is a REST API with a matching web app:
 
 - **Media downloader** - paste a URL (TikTok, YouTube, Instagram, Facebook, Twitter/X, Douyin) and get direct download links per format. Ported from the [Torikomi](https://github.com/univzy/torikomi-source) extensions.
+- **Search** - image search across Bing, DuckDuckGo, Pexels & Pinterest, plus Pixiv (artworks/manga/novels). Ported from the [ChisatoBOT](https://github.com/TobyG74/ChisatoBOT) scrapers.
 - **Modern authentication** - email/password (Argon2id), Google & GitHub OAuth, Cloudflare Turnstile captcha, JWT access tokens + refresh-token rotation.
 - **API keys** - per-user, hashed, tiered, with atomic daily quotas.
 - **Security-first** - anti-SSRF HTTP client, rate limiting, brute-force lockout, security headers, no secrets in the repo.
@@ -197,6 +198,19 @@ curl -H "X-API-Key: tobz_xxx" \
 ```
 Responses include the `X-Quota-Limit` & `X-Quota-Remaining` headers.
 
+### Search - `/search` (requires `X-API-Key`)
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/search/images?q=<q>&source=<src>&limit=<n>` | image search; `source` = `bing` (default), `duckduckgo`, `pexels`, `pinterest` |
+| GET | `/search/sources` | list available image sources |
+| GET | `/search/pixiv?q=<q>&type=<t>&page=<n>` | Pixiv search; `type` = `artworks` (default), `manga`, `novel` |
+
+```bash
+curl -H "X-API-Key: tobz_xxx" \
+  "http://localhost:8080/api/v1/search/images?q=sunset&source=duckduckgo&limit=20"
+```
+
 ## Configuration
 
 ### Backend (`backend/.env`)
@@ -249,7 +263,8 @@ backend/
     ├── handlers/           # core handlers: auth, oauth, account, apikey
     ├── response/           # uniform JSON envelope
     ├── features/           # modular features (see below)
-    │   └── downloader/     #   multi-platform media downloader
+    │   ├── downloader/     #   multi-platform media downloader
+    │   └── search/         #   image search + Pixiv
     └── server/             # Fiber wiring + global middleware + routes
 ```
 

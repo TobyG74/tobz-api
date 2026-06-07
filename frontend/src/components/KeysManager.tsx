@@ -4,9 +4,10 @@ import { Copy, KeyRound, Plus, Star, Trash2 } from "lucide-react";
 import { api, ApiError } from "../lib/api";
 import type { ApiKey, CreatedApiKey } from "../lib/types";
 import { useActiveKey } from "../hooks/useActiveKey";
-import { Button, Field, inputCls, Sheet } from "./primitives";
+import { Button, Field, inputCls } from "./primitives";
 
-export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Inline API-key management UI (create, activate, list with quota, revoke). */
+export function KeysManager() {
   const { key: activeKey, setKey: setActiveKey } = useActiveKey();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,8 +28,8 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
   }, []);
 
   useEffect(() => {
-    if (open) load();
-  }, [open, load]);
+    load();
+  }, [load]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -36,7 +37,7 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
     try {
       const created = await api.createKey({ name: name || "Default" });
       setJustCreated(created);
-      setActiveKey(created.api_key); // auto-activate for the downloader
+      setActiveKey(created.api_key); // auto-activate for downloader/search
       setName("");
       toast.success("API key dibuat & diaktifkan");
       load();
@@ -63,15 +64,13 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="API Keys">
+    <div>
       {/* Active key status */}
       <div className="mb-5 rounded-xl border border-line bg-void/50 p-4">
-        <p className="mb-1 text-xs uppercase tracking-widest text-mist">Key aktif (dipakai downloader)</p>
+        <p className="mb-1 text-xs uppercase tracking-widest text-mist">Key aktif (dipakai fitur)</p>
         {activeKey ? (
           <div className="flex items-center justify-between gap-2">
-            <code className="truncate font-mono text-sm text-cyan">
-              {activeKey.slice(0, 12)}••••••••
-            </code>
+            <code className="truncate font-mono text-sm text-cyan">{activeKey.slice(0, 12)}••••••••</code>
             <button onClick={() => setActiveKey("")} className="text-xs text-mist hover:text-red-300">
               hapus
             </button>
@@ -102,7 +101,6 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
         </div>
       </div>
 
-      {/* Freshly created key (shown once) */}
       {justCreated && (
         <div className="mb-5 rounded-xl border border-violet/50 bg-violet/10 p-4">
           <p className="mb-2 text-sm font-600 text-violet">Simpan key ini — hanya tampil sekali!</p>
@@ -117,7 +115,6 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
         </div>
       )}
 
-      {/* Create */}
       <form onSubmit={create} className="mb-6 flex items-end gap-2">
         <div className="flex-1">
           <Field label="Buat key baru">
@@ -134,7 +131,6 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
         </Button>
       </form>
 
-      {/* List */}
       <p className="mb-2 text-xs uppercase tracking-widest text-mist">Keys kamu</p>
       <div className="space-y-2">
         {loading && <p className="text-sm text-mist">Memuat…</p>}
@@ -154,9 +150,7 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
                     {k.tier}
                   </span>
                   {k.revoked && (
-                    <span className="rounded-md bg-red-500/15 px-1.5 py-0.5 text-[11px] text-red-300">
-                      dicabut
-                    </span>
+                    <span className="rounded-md bg-red-500/15 px-1.5 py-0.5 text-[11px] text-red-300">dicabut</span>
                   )}
                 </div>
                 {!k.revoked && (
@@ -170,13 +164,10 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
                 )}
               </div>
               <code className="mt-1 block font-mono text-xs text-mist">{k.prefix}••••••••</code>
-
               <div className="mt-3">
                 <div className="mb-1 flex justify-between font-mono text-[11px] text-mist">
                   <span>kuota harian</span>
-                  <span>
-                    {k.quota_used}/{k.daily_quota}
-                  </span>
+                  <span>{k.quota_used}/{k.daily_quota}</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-void">
                   <div
@@ -192,8 +183,8 @@ export function KeysPanel({ open, onClose }: { open: boolean; onClose: () => voi
 
       <div className="mt-6 flex items-center gap-2 rounded-xl border border-line bg-void/40 p-3 text-xs text-mist">
         <Star size={14} className="shrink-0 text-cyan" />
-        Key yang baru dibuat otomatis diaktifkan untuk downloader.
+        Key yang baru dibuat otomatis diaktifkan untuk semua fitur.
       </div>
-    </Sheet>
+    </div>
   );
 }
