@@ -74,6 +74,9 @@ func (h *Handlers) Register(c *fiber.Ctx) error {
 		return response.Fail(c, fiber.StatusConflict, "registration_failed", "Tidak dapat mendaftarkan akun ini")
 	}
 
+	// Seed the whitelist with the IP used to sign up (first login).
+	_, _ = h.whitelist.Add(user.ID, c.IP(), "Login pertama")
+
 	return h.issueTokens(c, user, fiber.StatusCreated)
 }
 
@@ -122,6 +125,11 @@ func (h *Handlers) Login(c *fiber.Ctx) error {
 
 	if user.FailedLoginCount != 0 || user.LockedUntil != nil {
 		h.db.Model(&user).Updates(map[string]interface{}{"failed_login_count": 0, "locked_until": nil})
+	}
+
+	// Enforce the user's IP whitelist (empty list = unrestricted).
+	if ok, _ := h.whitelist.Allowed(user.ID, c.IP()); !ok {
+		return response.Forbidden(c, "Login dari IP ini tidak diizinkan oleh whitelist akun")
 	}
 
 	return h.issueTokens(c, &user, fiber.StatusOK)

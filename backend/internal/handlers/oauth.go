@@ -71,9 +71,19 @@ func (h *Handlers) OAuthCallback(c *fiber.Ctx) error {
 		return h.redirectAuthError(c, "exchange_failed")
 	}
 
-	user, err := h.findOrCreateOAuthUser(info)
+	user, created, err := h.findOrCreateOAuthUser(info)
 	if err != nil {
 		return h.redirectAuthError(c, "server_error")
+	}
+
+	// On first OAuth login, seed the whitelist with the current IP.
+	if created {
+		_, _ = h.whitelist.Add(user.ID, c.IP(), "Login pertama")
+	}
+
+	// Enforce the user's IP whitelist (empty list = unrestricted).
+	if ok, _ := h.whitelist.Allowed(user.ID, c.IP()); !ok {
+		return h.redirectAuthError(c, "ip_not_allowed")
 	}
 
 	// Set the refresh cookie and redirect back to the SPA, which restores the
@@ -91,9 +101,11 @@ func (h *Handlers) redirectAuthError(c *fiber.Ctx, code string) error {
 	return c.Redirect(h.cfg.FrontendURL+"/?auth_error="+code, fiber.StatusTemporaryRedirect)
 }
 
-// findOrCreateOAuthUser links by existing account, then by verified email, else creates a new user.
-func (h *Handlers) findOrCreateOAuthUser(info *auth.OAuthUserInfo) (*models.User, error) {
+// findOrCreateOAuthUser links by existing account, then by verified email, else
+// creates a new user. The bool reports whether a brand-new user was created.
+func (h *Handlers) findOrCreateOAuthUser(info *auth.OAuthUserInfo) (*models.User, bool, error) {
 	var user models.User
+	created := false
 
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		var acct models.OAuthAccount
@@ -125,15 +137,16 @@ func (h *Handlers) findOrCreateOAuthUser(info *auth.OAuthUserInfo) (*models.User
 		if err := tx.Create(&user).Error; err != nil {
 			return err
 		}
+		created = true
 		return tx.Create(&models.OAuthAccount{
 			UserID: user.ID, Provider: info.Provider,
 			ProviderUserID: info.ProviderUserID, Email: info.Email,
 		}).Error
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return &user, nil
+	return &user, created, nil
 }
 
 func randomState() (string, error) {

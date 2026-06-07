@@ -10,6 +10,7 @@ import (
 	"github.com/tobz/tobz-api/internal/apikey"
 	"github.com/tobz/tobz-api/internal/auth"
 	"github.com/tobz/tobz-api/internal/response"
+	"github.com/tobz/tobz-api/internal/whitelist"
 )
 
 const (
@@ -55,8 +56,9 @@ func RequireAdmin() fiber.Handler {
 	}
 }
 
-// RequireAPIKey validates the API key from the X-API-Key header or apikey query param.
-func RequireAPIKey(keys *apikey.Service) fiber.Handler {
+// RequireAPIKey validates the API key from the X-API-Key header or apikey query
+// param, and enforces the key owner's IP whitelist.
+func RequireAPIKey(keys *apikey.Service, wl *whitelist.Service) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		raw := c.Get("X-API-Key")
 		if raw == "" {
@@ -78,6 +80,11 @@ func RequireAPIKey(keys *apikey.Service) fiber.Handler {
 			default:
 				return response.Unauthorized(c, "API key tidak valid")
 			}
+		}
+
+		// Enforce the key owner's IP whitelist (empty list = unrestricted).
+		if ok, _ := wl.Allowed(key.UserID, c.IP()); !ok {
+			return response.Forbidden(c, "IP ini tidak ada di whitelist akun")
 		}
 
 		c.Locals(ctxAPIKey, key)

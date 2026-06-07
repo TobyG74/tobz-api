@@ -90,11 +90,29 @@ func (k *APIKey) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// WhitelistIP is an IP a user allows for login and API usage. Max 5 per user.
+// The sentinel "0.0.0.0" means public (any IP allowed).
+type WhitelistIP struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:idx_user_ip" json:"user_id"`
+	IP        string    `gorm:"not null;uniqueIndex:idx_user_ip" json:"ip"`
+	Label     string    `gorm:"not null;default:''" json:"label"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (w *WhitelistIP) BeforeCreate(tx *gorm.DB) error {
+	if w.ID == uuid.Nil {
+		w.ID = uuid.New()
+	}
+	return nil
+}
+
 func AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&User{},
 		&OAuthAccount{},
 		&RefreshToken{},
 		&APIKey{},
+		&WhitelistIP{},
 	)
 }
