@@ -8,6 +8,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#060814" />
+
+    <!-- Apply the saved theme before paint to avoid a flash. -->
+    <script>
+      try {
+        var t = localStorage.getItem("tobz_theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
     <meta
       name="description"
       content="Tobz API — multi-platform REST APIs"

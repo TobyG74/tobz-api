@@ -1,6 +1,7 @@
 import { KeyRound, LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Button, Logo } from "./primitives";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 export function Nav({
   onAuth,
@@ -24,6 +25,7 @@ export function Nav({
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeSwitcher />
           {user ? (
             <>
               <Button variant="outline" onClick={onKeys} className="hidden sm:inline-flex">

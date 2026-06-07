@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 /* ----------------------------------------------------------------------------
-   Tobz API — design tokens. Dark "cyber/circuit" aesthetic aligned to the logo:
-   deep blue-black canvas, electric-blue → violet brand gradient, cyan sparks.
+   Design tokens. The default (:root) palette is "Cyber" — dark blue-black with
+   an electric-blue → violet brand gradient. Alternate themes below override the
+   same tokens via :root[data-theme="…"]; every surface/effect references these
+   variables (or color-mixes them), so switching the theme restyles everything.
 ---------------------------------------------------------------------------- */
 @theme {
   --color-void: #05070f;
@@ -24,15 +26,66 @@
   --font-display: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Sora", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
 
-  --shadow-glow: 0 0 0 1px rgba(59, 107, 255, 0.25), 0 12px 40px -8px rgba(59, 107, 255, 0.35);
+/* ---- Alternate themes (override tokens only) ---- */
+@layer base {
+  /* Aurora — light theme */
+  :root[data-theme="aurora"] {
+    color-scheme: light;
+    --color-void: #eef1fa;
+    --color-canvas: #f6f8fe;
+    --color-surface: #ffffff;
+    --color-surface-2: #eef2fb;
+    --color-line: #dbe2f1;
+    --color-fog: #41506b;
+    --color-mist: #6b7a99;
+    --color-paper: #0e1426;
+    --color-blue: #2f5fff;
+    --color-azure: #1f7fe0;
+    --color-violet: #7b3ff2;
+    --color-cyan: #0bb5d6;
+    --color-magenta: #b23cf0;
+  }
+
+  /* Sunset — warm dark */
+  :root[data-theme="sunset"] {
+    color-scheme: dark;
+    --color-void: #100806;
+    --color-canvas: #160a08;
+    --color-surface: #21100c;
+    --color-surface-2: #2b150f;
+    --color-line: #3a1f17;
+    --color-fog: #e8c3b0;
+    --color-mist: #b08a77;
+    --color-paper: #fff1e8;
+    --color-blue: #ff7a18;
+    --color-azure: #ff9d3c;
+    --color-violet: #ff4d6d;
+    --color-cyan: #ffcf3a;
+    --color-magenta: #ff2e63;
+  }
+
+  /* Emerald — green dark */
+  :root[data-theme="emerald"] {
+    color-scheme: dark;
+    --color-void: #04100c;
+    --color-canvas: #061410;
+    --color-surface: #0a1f18;
+    --color-surface-2: #0e2a20;
+    --color-line: #163a2c;
+    --color-fog: #a9d6c2;
+    --color-mist: #6f9a86;
+    --color-paper: #e6fff4;
+    --color-blue: #10b981;
+    --color-azure: #2ee6a6;
+    --color-violet: #22c55e;
+    --color-cyan: #5eead4;
+    --color-magenta: #a3e635;
+  }
 }
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
-
   html {
     scroll-behavior: smooth;
   }
@@ -45,35 +98,37 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 
-  /* Atmospheric base: layered radial brand glows + faint blueprint grid. */
+  /* Atmospheric base: brand-colored radial glows that follow the active theme. */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -2;
     background:
-      radial-gradient(60rem 60rem at 12% -10%, rgba(59, 107, 255, 0.18), transparent 60%),
-      radial-gradient(50rem 50rem at 95% 0%, rgba(139, 92, 255, 0.16), transparent 55%),
-      radial-gradient(40rem 40rem at 70% 110%, rgba(56, 230, 255, 0.1), transparent 55%);
+      radial-gradient(60rem 60rem at 12% -10%, color-mix(in srgb, var(--color-blue) 16%, transparent), transparent 60%),
+      radial-gradient(50rem 50rem at 95% 0%, color-mix(in srgb, var(--color-violet) 15%, transparent), transparent 55%),
+      radial-gradient(40rem 40rem at 70% 110%, color-mix(in srgb, var(--color-cyan) 10%, transparent), transparent 55%);
   }
 
+  /* Faint blueprint grid. */
   body::after {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -2;
     background-image:
-      linear-gradient(rgba(120, 132, 173, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(120, 132, 173, 0.06) 1px, transparent 1px);
+      linear-gradient(color-mix(in srgb, var(--color-mist) 8%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-mist) 8%, transparent) 1px, transparent 1px);
     background-size: 46px 46px;
     mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 30%, transparent 80%);
   }
 
   ::selection {
-    background: rgba(139, 92, 255, 0.35);
-    color: #fff;
+    background: color-mix(in srgb, var(--color-violet) 35%, transparent);
+    color: var(--color-paper);
   }
 
   h1, h2, h3, h4 {
@@ -82,7 +137,6 @@
     letter-spacing: -0.01em;
   }
 
-  /* Custom scrollbar to match the theme. */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -98,7 +152,6 @@
 }
 
 @layer utilities {
-  /* Brand gradient text. */
   .text-gradient {
     background: linear-gradient(110deg, var(--color-azure), var(--color-violet) 55%, var(--color-magenta));
     -webkit-background-clip: text;
@@ -106,14 +159,16 @@
     color: transparent;
   }
 
-  /* Glass panel. */
   .glass {
-    background: linear-gradient(180deg, rgba(18, 24, 53, 0.7), rgba(13, 18, 36, 0.6));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface) 72%, transparent),
+      color-mix(in srgb, var(--color-surface) 58%, transparent)
+    );
     backdrop-filter: blur(14px);
     border: 1px solid var(--color-line);
   }
 
-  /* Animated gradient border wrapper. */
   .grad-border {
     position: relative;
     background: var(--color-surface);
@@ -134,10 +189,10 @@
   }
 
   .glow-blue {
-    box-shadow: 0 0 24px -4px rgba(59, 107, 255, 0.55);
+    box-shadow: 0 0 24px -4px color-mix(in srgb, var(--color-blue) 55%, transparent);
   }
   .glow-violet {
-    box-shadow: 0 0 28px -4px rgba(139, 92, 255, 0.55);
+    box-shadow: 0 0 28px -4px color-mix(in srgb, var(--color-violet) 55%, transparent);
   }
 
   .grain {
