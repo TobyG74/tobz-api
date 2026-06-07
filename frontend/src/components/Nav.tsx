@@ -17,9 +17,10 @@ export function Nav({
         <Logo />
 
         <nav className="hidden items-center gap-7 text-sm text-fog md:flex">
-          <a href="#downloader" className="transition hover:text-paper">Downloader</a>
-          <a href="#platforms" className="transition hover:text-paper">Platform</a>
-          <a href="#features" className="transition hover:text-paper">Keamanan</a>
+          <a href="#features" className="transition hover:text-paper">Fitur</a>
+          <a href="#how" className="transition hover:text-paper">Cara Kerja</a>
+          <a href="#pricing" className="transition hover:text-paper">Harga</a>
+          <a href="#faq" className="transition hover:text-paper">FAQ</a>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -39,9 +40,17 @@ export function Nav({
               </Button>
             </>
           ) : (
-            <Button onClick={onAuth}>
-              <Sparkles size={16} /> Mulai
-            </Button>
+            <>
+              <button
+                onClick={onAuth}
+                className="hidden text-sm text-fog transition hover:text-paper sm:block"
+              >
+                Masuk
+              </button>
+              <Button onClick={onAuth}>
+                <Sparkles size={16} /> Mulai gratis
+              </Button>
+            </>
           )}
         </div>
       </div>
