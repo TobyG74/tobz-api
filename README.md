@@ -21,6 +21,7 @@ A full refactor of the legacy Flask API into a Go backend and a React frontend.
 - [API reference](#api-reference)
 - [Configuration](#configuration)
 - [Backend](#backend)
+  - [Installation](#installation)
   - [Architecture](#architecture)
   - [Adding new features](#adding-new-features)
   - [Security](#security)
@@ -85,23 +86,42 @@ tobz-api/
 ├── frontend/    # Web app (React + TypeScript + Vite)
 │   ├── src/                # components, lib (api client), context, hooks
 │   ├── public/             # logo + favicons
+│   ├── Dockerfile · nginx.conf
 │   └── .env.example
+├── docker-compose.yml      # ← full stack in one command: db + api + web
 └── README.md    # ← all documentation lives here
 ```
 
 ## Quick start
 
-You need **Go 1.26+**, **Node 18+**, and **PostgreSQL** (or Docker).
+You need **Go 1.26+**, **Node 18+**, and **PostgreSQL** — or just **Docker** for the all-in-one path below.
+
+### Fastest - whole stack in Docker
+
+From the repo root (needs only Docker):
+
+```bash
+docker compose up --build
+# web → http://localhost:3000 · api → http://localhost:8080 · db → :5432
+```
+
+Builds the frontend (nginx), the Go API, and PostgreSQL together; captcha is off by
+default. Stop with `docker compose down` (add `-v` to also drop the database volume).
+To run the pieces individually instead, follow the two steps below.
 
 ### 1 - Backend (`:8080`)
 
 ```bash
 cd backend
+go mod download          # install Go dependencies (fills go.sum)
 cp .env.example .env
 # minimum: set DATABASE_URL and a JWT_SECRET (>=32 chars).
 # for dev without captcha, set CAPTCHA_ENABLED=false
 make run                 # or: docker compose up --build
 ```
+
+> First time on a fresh machine? See [Backend → Installation](#installation) for the
+> full step-by-step (dependencies, database, env, Docker, troubleshooting).
 
 ### 2 - Frontend (`:3000`)
 
@@ -245,6 +265,96 @@ curl -H "X-API-Key: tobz_xxx" \
 ## Backend
 
 Go 1.26 · [Fiber](https://gofiber.io) v2 · [GORM](https://gorm.io) · PostgreSQL.
+
+### Installation
+
+**Prerequisites**
+
+| Tool | Version | Check |
+|---|---|---|
+| Go | **1.26+** | `go version` |
+| PostgreSQL | 14+ — any reachable instance, or use the bundled Docker one | `psql --version` |
+| Docker + Compose | optional — enables the one-command path | `docker compose version` |
+| make | optional — every step also lists the raw `go` command | `make --version` |
+
+#### Option A — local Go toolchain
+
+```bash
+cd backend
+
+# 1. Install dependencies (reads go.mod + go.sum)
+go mod download
+#    If imports changed or go.sum is incomplete, repair it:
+make tidy                      # == go mod tidy
+
+# 2. Provide a PostgreSQL database — your own, or just the DB via Docker:
+docker compose up -d db        # postgres:16 on :5432 (user/pass/db = tobz)
+
+# 3. Create and edit your env file
+cp .env.example .env
+#    Required:  DATABASE_URL (PostgreSQL DSN) and JWT_SECRET (>= 32 chars)
+#    Dev tip:   CAPTCHA_ENABLED=false  to skip Turnstile
+
+# 4. Run — schema auto-migrates on startup, no manual migration step
+make run                       # == go run ./cmd/server
+#    → API on http://localhost:8080
+```
+
+Generate a strong `JWT_SECRET`:
+
+```bash
+openssl rand -base64 48        # macOS / Linux
+```
+```powershell
+# Windows PowerShell
+$b = New-Object byte[] 48; (New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes($b); [Convert]::ToBase64String($b)
+```
+
+> **No manual migrations.** On boot the app runs GORM `AutoMigrate` for `User`,
+> `OAuthAccount`, `RefreshToken`, and `APIKey`. You only need the *database* named in
+> `DATABASE_URL` to exist — the Docker DB above already creates `tobz_api`.
+
+#### Option B — backend + database in Docker
+
+Brings up PostgreSQL **and** the API together (captcha disabled by default for dev):
+
+```bash
+cd backend
+docker compose up --build      # API on :8080, Postgres on :5432
+docker compose down            # stop; add -v to also drop the pgdata volume
+```
+
+> Want the **frontend** in the same command too? Use the **root** compose instead:
+> `docker compose up --build` from the repo root starts db + api + **web** (nginx)
+> together — see [Quick start → Fastest](#quick-start).
+
+`JWT_SECRET` falls back to a dev placeholder in compose — set your own in any shared env:
+
+```bash
+JWT_SECRET=$(openssl rand -base64 48) docker compose up --build
+```
+
+#### Command reference
+
+| Make | Raw command | Purpose |
+|---|---|---|
+| `make run` | `go run ./cmd/server` | run the API (dev) |
+| `make build` | `go build -trimpath -ldflags="-s -w" -o bin/server ./cmd/server` | compile a stripped binary → `bin/server` |
+| `make tidy` | `go mod tidy` | add missing / drop unused modules + repair `go.sum` |
+| `make vet` | `go vet ./...` | static analysis |
+| `make test` | `go test ./...` | unit tests |
+| `make docker-up` / `make docker-down` | `docker compose up --build` / `down` | full stack in Docker |
+
+#### Troubleshooting
+
+- **`missing go.sum entry for module providing package …`** — your `go.sum` is
+  incomplete (typical after a stale or partial checkout). Run `go mod download` (or
+  `go mod tidy`), then retry. Pull the latest commit first so you have the complete file.
+- **`go run ./cmd/server` reports no Go files / package not found** — the `cmd/server`
+  or `internal/server` folders are missing from your checkout. Pull the latest `master`
+  (these were once excluded by an over-broad `.gitignore` rule and have since been fixed).
+- **`gagal koneksi database`** — `DATABASE_URL` is wrong or PostgreSQL isn't running.
+  Start it with `docker compose up -d db` and verify the host/port/db in the DSN.
 
 ### Architecture
 
